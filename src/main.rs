@@ -7,6 +7,8 @@ use simplelog::{ColorChoice, ConfigBuilder, TermLogger, TerminalMode};
 
 #[cfg(feature = "git")]
 use og_cli::git::{GitCommand, GitPlugin};
+#[cfg(feature = "ssh")]
+use og_cli::git::{SshCommand, SshPlugin};
 use og_cli::{
     config,
     dg::{DgCliPlugin, DgCommand},
@@ -51,6 +53,9 @@ enum Commands {
     Dg(DgCommand),
     #[clap(name = "network-beta")]
     Network(NetworkCommand),
+    #[cfg(feature = "ssh")]
+    #[clap(name = "ssh-beta")]
+    Ssh(NetworkCommand),
 }
 
 #[tokio::main]
@@ -87,6 +92,8 @@ async fn main() -> Result<()> {
                     GraphQlPlugin::run(graphql_command)?;
                 }
                 Some(Commands::Search(search_command)) => SearchPlugin::run(search_command).await?, // default is to forward unknown commands to the python dg cli
+                #[cfg(feature = "ssh")]
+                Some(Commands::Ssh(ssh_command)) => SshPlugin::run(ssh_command).await?, // default is to forward unknown commands to the python dg cli
                 Some(Commands::Dg(dg_command)) => {
                     DgCliPlugin::run(dg_command)?;
                 }
