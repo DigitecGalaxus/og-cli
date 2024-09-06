@@ -1,5 +1,5 @@
 mod commands;
 mod ssh;
 
-pub use commands::SshCommands;
-pub use SshPlugin;
+pub use commands::SshCommand;
+pub use ssh::SshPlugin;
