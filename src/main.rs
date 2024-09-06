@@ -1,11 +1,14 @@
+use std::{env, process};
+
 use clap::{error::ErrorKind, CommandFactory, Parser, Subcommand};
 use eyre::Result;
 use log::LevelFilter;
 use simplelog::{ColorChoice, ConfigBuilder, TermLogger, TerminalMode};
-use std::{env, process};
 
 #[cfg(feature = "git")]
 use og_cli::git::{GitCommand, GitPlugin};
+#[cfg(feature = "ssh")]
+use og_cli::ssh::{SshCommand, SshPlugin};
 use og_cli::{
     config,
     dg::{DgCliPlugin, DgCommand},
@@ -50,6 +53,9 @@ enum Commands {
     Dg(DgCommand),
     #[clap(name = "network-beta")]
     Network(NetworkCommand),
+    #[cfg(feature = "ssh")]
+    #[clap(name = "ssh-beta")]
+    Ssh(SshCommand),
 }
 
 #[tokio::main]
@@ -68,38 +74,38 @@ async fn main() -> Result<()> {
 
     let cli = Cli::try_parse();
     match cli {
-        Ok(c) => {
-            match c.command {
-                Some(Commands::MongoDb(mongodb_command)) => MongoDbPlugin::run(mongodb_command),
-                Some(Commands::Sql(sql_command)) => SqlPlugin::run(sql_command).await?,
-                Some(Commands::Dotnet(command)) => DotnetPlugin::run(command).expect("Reason"),
-                #[cfg(feature = "git")]
-                Some(Commands::Git(git_command)) => GitPlugin::run(git_command),
-                Some(Commands::Fix(_)) => {
-                    fix::FixPlugin::run()?;
-                }
-                Some(Commands::Doctor(dr_command)) => doctor::run(dr_command),
-                Some(Commands::Kubernetes(kubernetes_command)) => {
-                    KubernetesPlugin::run(kubernetes_command).await?
-                }
-                Some(Commands::GraphQl(graphql_command)) => {
-                    GraphQlPlugin::run(graphql_command)?;
-                }
-                Some(Commands::Search(search_command)) => SearchPlugin::run(search_command).await?, // default is to forward unknown commands to the python dg cli
-                Some(Commands::Dg(dg_command)) => {
-                    DgCliPlugin::run(dg_command)?;
-                }
-                Some(Commands::Network(network_command)) => {
-                    NetworkPlugin::run(network_command);
-                }
-                None => {
-                    let mut cmd = Cli::command();
-                    cmd.build();
-                    let _ = cmd.print_help();
-                    process::exit(0);
-                }
+        Ok(c) => match c.command {
+            Some(Commands::MongoDb(mongodb_command)) => MongoDbPlugin::run(mongodb_command),
+            Some(Commands::Sql(sql_command)) => SqlPlugin::run(sql_command).await?,
+            Some(Commands::Dotnet(command)) => DotnetPlugin::run(command).expect("Reason"),
+            #[cfg(feature = "git")]
+            Some(Commands::Git(git_command)) => GitPlugin::run(git_command).await,
+            Some(Commands::Fix(_)) => {
+                fix::FixPlugin::run()?;
             }
-        }
+            Some(Commands::Doctor(dr_command)) => doctor::run(dr_command),
+            Some(Commands::Kubernetes(kubernetes_command)) => {
+                KubernetesPlugin::run(kubernetes_command).await?
+            }
+            Some(Commands::GraphQl(graphql_command)) => {
+                GraphQlPlugin::run(graphql_command)?;
+            }
+            Some(Commands::Search(search_command)) => SearchPlugin::run(search_command).await?,
+            #[cfg(feature = "ssh")]
+            Some(Commands::Ssh(ssh_command)) => SshPlugin::run(ssh_command).await?,
+            Some(Commands::Dg(dg_command)) => {
+                DgCliPlugin::run(dg_command)?;
+            }
+            Some(Commands::Network(network_command)) => {
+                NetworkPlugin::run(network_command);
+            }
+            None => {
+                let mut cmd = Cli::command();
+                cmd.build();
+                let _ = cmd.print_help();
+                process::exit(0);
+            }
+        },
         Err(e) => {
             let args: Vec<String> = env::args().skip(1).collect();
 

@@ -13,5 +13,7 @@ pub mod network;
 pub mod plugin;
 pub mod search;
 pub mod sql;
+#[cfg(feature = "ssh")]
+pub mod ssh;
 
 pub use config::get_config;

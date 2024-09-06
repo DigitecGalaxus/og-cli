@@ -1,16 +1,17 @@
+use std::{ffi::OsStr, process::Command};
+
 use dialoguer::MultiSelect;
 use eyre::{eyre, ContextCompat, Result};
 use homedir::get_my_home;
 use log::info;
 use ssh_key::{rand_core::OsRng, Algorithm, LineEnding, PrivateKey, PublicKey};
-use std::{ffi::OsStr, process::Command};
 
 use super::commands::{GitCommand, GitSubCommands};
 
 pub struct GitPlugin;
 
 impl GitPlugin {
-    pub fn run(cli: GitCommand) {
+    pub async fn run(cli: GitCommand) {
         match cli.command {
             GitSubCommands::Setup => setup().unwrap(),
         }
